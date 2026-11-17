@@ -334,6 +334,15 @@ export class EmailAgent extends AIChatAgent<any> {
 		threadId: string;
 	}) {
 		const env = this.env as Env;
+		try {
+			const config = await env.BUCKET.get(`mailboxes/${emailData.mailboxId}.json`);
+			if (!config || (await config.json<{ autoDraftReplies?: boolean }>()).autoDraftReplies === false) {
+				return { status: "auto_draft_disabled" };
+			}
+		} catch (e) {
+			console.error("Could not check auto-draft setting:", (e as Error).message);
+			return { status: "error", error: "Could not check auto-draft setting" };
+		}
 		const workersai = createWorkersAI({ binding: env.AI });
 		const tools = createEmailTools(env, emailData.mailboxId);
 		const systemPrompt = await getSystemPrompt(env, emailData.mailboxId);
